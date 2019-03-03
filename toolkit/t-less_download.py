@@ -63,7 +63,7 @@ def win32_utf8_argv():
         # Remove Python executable and commands if present
         start = argnum - sysnum
         for i in range(start, argnum):
-            result.append(argv[i].encode('utf-8'))
+            result.append(argv[i].encode("utf-8"))
     return result
 
 
@@ -78,43 +78,41 @@ def win32_unicode_console():
 
     # Output exceptions in this code to original_stderr, so that we can at least see them
     def _complain(message):
-        original_stderr.write(
-            message if isinstance(message, str) else repr(message))
-        original_stderr.write('\n')
+        original_stderr.write(message if isinstance(message, str) else repr(message))
+        original_stderr.write("\n")
 
-    codecs.register(
-        lambda name: codecs.lookup('utf-8') if name == 'cp65001' else None)
+    codecs.register(lambda name: codecs.lookup("utf-8") if name == "cp65001" else None)
 
     try:
-        GetStdHandle = WINFUNCTYPE(HANDLE, DWORD)(("GetStdHandle",
-                                                   windll.kernel32))
+        GetStdHandle = WINFUNCTYPE(HANDLE, DWORD)(("GetStdHandle", windll.kernel32))
         STD_OUTPUT_HANDLE = DWORD(-11)
         STD_ERROR_HANDLE = DWORD(-12)
-        GetFileType = WINFUNCTYPE(DWORD, DWORD)(("GetFileType",
-                                                 windll.kernel32))
+        GetFileType = WINFUNCTYPE(DWORD, DWORD)(("GetFileType", windll.kernel32))
         FILE_TYPE_CHAR = 0x0002
         FILE_TYPE_REMOTE = 0x8000
         GetConsoleMode = WINFUNCTYPE(BOOL, HANDLE, POINTER(DWORD))(
-            ("GetConsoleMode", windll.kernel32))
+            ("GetConsoleMode", windll.kernel32)
+        )
         INVALID_HANDLE_VALUE = DWORD(-1).value
 
         def not_a_console(handle):
             if handle == INVALID_HANDLE_VALUE or handle is None:
                 return True
-            return ((GetFileType(handle) & ~FILE_TYPE_REMOTE) != FILE_TYPE_CHAR
-                    or GetConsoleMode(handle, byref(DWORD())) == 0)
+            return (
+                GetFileType(handle) & ~FILE_TYPE_REMOTE
+            ) != FILE_TYPE_CHAR or GetConsoleMode(handle, byref(DWORD())) == 0
 
         old_stdout_fileno = None
         old_stderr_fileno = None
-        if hasattr(sys.stdout, 'fileno'):
+        if hasattr(sys.stdout, "fileno"):
             old_stdout_fileno = sys.stdout.fileno()
-        if hasattr(sys.stderr, 'fileno'):
+        if hasattr(sys.stderr, "fileno"):
             old_stderr_fileno = sys.stderr.fileno()
 
         STDOUT_FILENO = 1
         STDERR_FILENO = 2
-        real_stdout = (old_stdout_fileno == STDOUT_FILENO)
-        real_stderr = (old_stderr_fileno == STDERR_FILENO)
+        real_stdout = old_stdout_fileno == STDOUT_FILENO
+        real_stderr = old_stderr_fileno == STDERR_FILENO
 
         if real_stdout:
             hStdout = GetStdHandle(STD_OUTPUT_HANDLE)
@@ -127,9 +125,9 @@ def win32_unicode_console():
                 real_stderr = False
 
         if real_stdout or real_stderr:
-            WriteConsoleW = WINFUNCTYPE(BOOL, HANDLE, LPWSTR, DWORD,
-                                        POINTER(DWORD), LPVOID)(
-                                            ("WriteConsoleW", windll.kernel32))
+            WriteConsoleW = WINFUNCTYPE(
+                BOOL, HANDLE, LPWSTR, DWORD, POINTER(DWORD), LPVOID
+            )(("WriteConsoleW", windll.kernel32))
 
             class UnicodeOutput:
                 def __init__(self, hConsole, stream, fileno, name):
@@ -138,8 +136,8 @@ def win32_unicode_console():
                     self._fileno = fileno
                     self.closed = False
                     self.softspace = False
-                    self.mode = 'w'
-                    self.encoding = 'utf-8'
+                    self.mode = "w"
+                    self.encoding = "utf-8"
                     self.name = name
                     self.flush()
 
@@ -158,40 +156,46 @@ def win32_unicode_console():
                         try:
                             self._stream.flush()
                         except Exception as e:
-                            _complain("%s.flush: %r from %r" % (self.name, e,
-                                                                self._stream))
+                            _complain(
+                                "%s.flush: %r from %r" % (self.name, e, self._stream)
+                            )
                             raise
 
                 def write(self, text):
                     try:
                         if self._hConsole is None:
                             if not PY3K and isinstance(text, unicode):
-                                text = text.encode('utf-8')
+                                text = text.encode("utf-8")
                             elif PY3K and isinstance(text, str):
-                                text = text.encode('utf-8')
+                                text = text.encode("utf-8")
                             self._stream.write(text)
                         else:
                             if not PY3K and not isinstance(text, unicode):
-                                text = str(text).decode('utf-8')
+                                text = str(text).decode("utf-8")
                             elif PY3K and not isinstance(text, str):
-                                text = text.decode('utf-8')
+                                text = text.decode("utf-8")
                             remaining = len(text)
                             while remaining:
                                 n = DWORD(0)
                                 # There is a shorter-than-documented limitation on the
                                 # length of the string passed to WriteConsoleW (see
                                 # <http://tahoe-lafs.org/trac/tahoe-lafs/ticket/1232>.
-                                retval = WriteConsoleW(self._hConsole, text,
-                                                       min(remaining, 10000),
-                                                       byref(n), None)
+                                retval = WriteConsoleW(
+                                    self._hConsole,
+                                    text,
+                                    min(remaining, 10000),
+                                    byref(n),
+                                    None,
+                                )
                                 if retval == 0 or n.value == 0:
                                     raise IOError(
                                         "WriteConsoleW returned %r, n.value = %r"
-                                        % (retval, n.value))
+                                        % (retval, n.value)
+                                    )
                                 remaining -= n.value
                                 if not remaining:
                                     break
-                                text = text[n.value:]
+                                text = text[n.value :]
                     except Exception as e:
                         _complain("%s.write: %r" % (self.name, e))
                         raise
@@ -205,21 +209,24 @@ def win32_unicode_console():
                         raise
 
             if real_stdout:
-                sys.stdout = UnicodeOutput(hStdout, None, STDOUT_FILENO,
-                                           '<Unicode console stdout>')
+                sys.stdout = UnicodeOutput(
+                    hStdout, None, STDOUT_FILENO, "<Unicode console stdout>"
+                )
             else:
-                sys.stdout = UnicodeOutput(None, sys.stdout, old_stdout_fileno,
-                                           '<Unicode redirected stdout>')
+                sys.stdout = UnicodeOutput(
+                    None, sys.stdout, old_stdout_fileno, "<Unicode redirected stdout>"
+                )
 
             if real_stderr:
-                sys.stderr = UnicodeOutput(hStderr, None, STDERR_FILENO,
-                                           '<Unicode console stderr>')
+                sys.stderr = UnicodeOutput(
+                    hStderr, None, STDERR_FILENO, "<Unicode console stderr>"
+                )
             else:
-                sys.stderr = UnicodeOutput(None, sys.stderr, old_stderr_fileno,
-                                           '<Unicode redirected stderr>')
+                sys.stderr = UnicodeOutput(
+                    None, sys.stderr, old_stderr_fileno, "<Unicode redirected stderr>"
+                )
     except Exception as e:
-        _complain(
-            "exception %r while fixing up sys.stdout and sys.stderr" % (e, ))
+        _complain("exception %r while fixing up sys.stdout and sys.stderr" % (e,))
 
 
 # --- helpers ---
@@ -237,7 +244,7 @@ def to_unicode(filename):
         if isinstance(filename, unicode):
             return filename
         else:
-            return unicode(filename, 'utf-8')
+            return unicode(filename, "utf-8")
 
 
 def filename_from_url(url):
@@ -259,20 +266,20 @@ def filename_from_headers(headers):
     if type(headers) == str:
         headers = headers.splitlines()
     if type(headers) == list:
-        headers = dict([x.split(':', 1) for x in headers])
+        headers = dict([x.split(":", 1) for x in headers])
     cdisp = headers.get("Content-Disposition")
     if not cdisp:
         return None
-    cdtype = cdisp.split(';')
+    cdtype = cdisp.split(";")
     if len(cdtype) == 1:
         return None
-    if cdtype[0].strip().lower() not in ('inline', 'attachment'):
+    if cdtype[0].strip().lower() not in ("inline", "attachment"):
         return None
     # several filename params is illegal, but just in case
-    fnames = [x for x in cdtype[1:] if x.strip().startswith('filename=')]
+    fnames = [x for x in cdtype[1:] if x.strip().startswith("filename=")]
     if len(fnames) > 1:
         return None
-    name = fnames[0].split('=')[1].strip(' \t"')
+    name = fnames[0].split("=")[1].strip(' \t"')
     name = os.path.basename(name)
     if not name:
         return None
@@ -283,20 +290,18 @@ def filename_fix_existing(filename):
     """Expands name portion of filename with numeric ' (x)' suffix to
     return filename that doesn't exist already.
     """
-    dirname = u'.'
-    name, ext = filename.rsplit('.', 1)
+    dirname = u"."
+    name, ext = filename.rsplit(".", 1)
     names = [x for x in os.listdir(dirname) if x.startswith(name)]
-    names = [x.rsplit('.', 1)[0] for x in names]
-    suffixes = [x.replace(name, '') for x in names]
+    names = [x.rsplit(".", 1)[0] for x in names]
+    suffixes = [x.replace(name, "") for x in names]
     # filter suffixes that match ' (x)' pattern
-    suffixes = [
-        x[2:-1] for x in suffixes if x.startswith(' (') and x.endswith(')')
-    ]
-    indexes = [int(x) for x in suffixes if set(x) <= set('0123456789')]
+    suffixes = [x[2:-1] for x in suffixes if x.startswith(" (") and x.endswith(")")]
+    indexes = [int(x) for x in suffixes if set(x) <= set("0123456789")]
     idx = 1
     if indexes:
         idx += sorted(indexes)[-1]
-    return '%s (%d).%s' % (name, idx, ext)
+    return "%s (%d).%s" % (name, idx, ext)
 
 
 # --- terminal/console output helpers ---
@@ -309,19 +314,19 @@ def get_console_width():
        Code from http://bitbucket.org/techtonik/python-pager
     """
 
-    if os.name == 'nt':
+    if os.name == "nt":
         STD_INPUT_HANDLE = -10
         STD_OUTPUT_HANDLE = -11
         STD_ERROR_HANDLE = -12
 
         # get console handle
         from ctypes import windll, Structure, byref
+
         try:
             from ctypes.wintypes import SHORT, WORD, DWORD
         except ImportError:
             # workaround for missing types in Python 2.5
-            from ctypes import (c_short as SHORT, c_ushort as WORD, c_ulong as
-                                DWORD)
+            from ctypes import c_short as SHORT, c_ushort as WORD, c_ulong as DWORD
         console_handle = windll.kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
 
         # CONSOLE_SCREEN_BUFFER_INFO Structure
@@ -329,22 +334,29 @@ def get_console_width():
             _fields_ = [("X", SHORT), ("Y", SHORT)]
 
         class SMALL_RECT(Structure):
-            _fields_ = [("Left", SHORT), ("Top", SHORT), ("Right", SHORT),
-                        ("Bottom", SHORT)]
+            _fields_ = [
+                ("Left", SHORT),
+                ("Top", SHORT),
+                ("Right", SHORT),
+                ("Bottom", SHORT),
+            ]
 
         class CONSOLE_SCREEN_BUFFER_INFO(Structure):
-            _fields_ = [("dwSize", COORD), ("dwCursorPosition", COORD),
-                        ("wAttributes", WORD), ("srWindow", SMALL_RECT),
-                        ("dwMaximumWindowSize", DWORD)]
+            _fields_ = [
+                ("dwSize", COORD),
+                ("dwCursorPosition", COORD),
+                ("wAttributes", WORD),
+                ("srWindow", SMALL_RECT),
+                ("dwMaximumWindowSize", DWORD),
+            ]
 
         sbi = CONSOLE_SCREEN_BUFFER_INFO()
-        ret = windll.kernel32.GetConsoleScreenBufferInfo(
-            console_handle, byref(sbi))
+        ret = windll.kernel32.GetConsoleScreenBufferInfo(console_handle, byref(sbi))
         if ret == 0:
             return 0
         return sbi.srWindow.Right + 1
 
-    elif os.name == 'posix':
+    elif os.name == "posix":
         from fcntl import ioctl
         from termios import TIOCGWINSZ
         from array import array
@@ -371,7 +383,7 @@ def bar_thermometer(current, total, width=80):
     # number of dots on thermometer scale
     avail_dots = width - 2
     shaded_dots = int(math.floor(float(current) / total * avail_dots))
-    return '[' + '.' * shaded_dots + ' ' * (avail_dots - shaded_dots) + ']'
+    return "[" + "." * shaded_dots + " " * (avail_dots - shaded_dots) + "]"
 
 
 def bar_adaptive(current, total, width=80):
@@ -419,11 +431,11 @@ def bar_adaptive(current, total, width=80):
     # pppp bbbbb sssssss
 
     min_width = {
-        'percent': 4,  # 100%
-        'bar': 3,  # [.]
-        'size': len("%s" % total) * 2 + 3,  # 'xxxx / yyyy'
+        "percent": 4,  # 100%
+        "bar": 3,  # [.]
+        "size": len("%s" % total) * 2 + 3,  # 'xxxx / yyyy'
     }
-    priority = ['percent', 'bar', 'size']
+    priority = ["percent", "bar", "size"]
 
     # select elements to show
     selected = []
@@ -431,27 +443,27 @@ def bar_adaptive(current, total, width=80):
     for field in priority:
         if min_width[field] < avail:
             selected.append(field)
-            avail -= min_width[
-                field] + 1  # +1 is for separator or for reserved space at
+            avail -= (
+                min_width[field] + 1
+            )  # +1 is for separator or for reserved space at
             # the end of line to avoid linefeed on Windows
     # render
-    output = ''
+    output = ""
     for field in selected:
 
-        if field == 'percent':
+        if field == "percent":
             # fixed size width for percentage
-            output += ('%s%%' % (100 * current // total)).rjust(
-                min_width['percent'])
-        elif field == 'bar':  # [. ]
+            output += ("%s%%" % (100 * current // total)).rjust(min_width["percent"])
+        elif field == "bar":  # [. ]
             # bar takes its min width + all available space
-            output += bar_thermometer(current, total, min_width['bar'] + avail)
-        elif field == 'size':
+            output += bar_thermometer(current, total, min_width["bar"] + avail)
+        elif field == "size":
             # size field has a constant width (min == max)
-            output += ("%s / %s" % (current, total)).rjust(min_width['size'])
+            output += ("%s / %s" % (current, total)).rjust(min_width["size"])
 
         selected = selected[1:]
         if selected:
-            output += ' '  # add field separator
+            output += " "  # add field separator
 
     return output
 
@@ -499,13 +511,13 @@ def detect_filename(url=None, out=None, headers=None, default="download.wget"):
     """Return filename for saving file. If no filename is detected from output
     argument, url or headers, return default (download.wget)
     """
-    names = dict(out='', url='', headers='')
+    names = dict(out="", url="", headers="")
     if out:
-        names["out"] = out or ''
+        names["out"] = out or ""
     if url:
-        names["url"] = filename_from_url(url) or ''
+        names["url"] = filename_from_url(url) or ""
     if headers:
-        names["headers"] = filename_from_headers(headers) or ''
+        names["headers"] = filename_from_headers(headers) or ""
     return names["out"] or names["headers"] or names["url"] or default
 
 
@@ -580,18 +592,17 @@ model_types = ["cad", "cad_subdivided", "reconst"]
 
 def parse():
     parser = argparse.ArgumentParser(
-        description=
-        "Downloads and unpacks the selected parts of the T-LESS dataset. "
+        description="Downloads and unpacks the selected parts of the T-LESS dataset. "
         "Example usage: "
-        "\"t-less_download.py --train --test --models --sensors primesense\" "
+        '"t-less_download.py --train --test --models --sensors primesense" '
         "- downloads and unpacks all models and all images from the Primesense sensor."
     )
     parser.add_argument(
         "--destination",
         default=".",
-        help=
-        "destination folder inside which a new folder for the dataset is created"
-        " (default is the current folder)")
+        help="destination folder inside which a new folder for the dataset is created"
+        " (default is the current folder)",
+    )
     parser.add_argument(
         "--train",
         nargs="*",
@@ -599,7 +610,8 @@ def parse():
         choices=train_ids,
         default=train_ids,
         metavar="obj_id",
-        help="IDs of objects (all are downloaded if no ID is specified)")
+        help="IDs of objects (all are downloaded if no ID is specified)",
+    )
     parser.add_argument(
         "--test",
         nargs="*",
@@ -607,22 +619,21 @@ def parse():
         choices=test_ids,
         default=test_ids,
         metavar="scene_id",
-        help="IDs of scenes (all are downloaded if no ID is specified)")
+        help="IDs of scenes (all are downloaded if no ID is specified)",
+    )
     parser.add_argument(
         "--sensors",
         nargs="+",
         default=sensor_types,
         choices=sensor_types,
-        help=
-        "sensors (images from all sensors are downloaded if none is specified)"
+        help="sensors (images from all sensors are downloaded if none is specified)",
     )
     parser.add_argument(
         "--models",
         nargs="*",
         choices=model_types,
         default=model_types,
-        help=
-        "variants of 3D object models (all variants are downloaded if none is specified)"
+        help="variants of 3D object models (all variants are downloaded if none is specified)",
     )
     args = parser.parse_args()
 
@@ -637,7 +648,7 @@ def parse():
     dest = os.path.normpath(args.destination)
     ids = [args.train, args.test]
     if all(i is None for i in ids + [args.models]):
-        #parser.error("What should be downloaded?")
+        # parser.error("What should be downloaded?")
         parser.print_usage()
         parser.exit()
     for i, id_list in enumerate(ids):
@@ -689,26 +700,38 @@ def callback_progress_zip(size_current, size_total, bar_function=bar_adaptive):
 def main():
     global step_total
     path_dest_home, ids_lists, sensors, models = parse()
-    step_total = len(sensors) * len(ids_lists) * sum(
-        (len(i) for i in ids_lists)) + len(models)
+    step_total = len(sensors) * len(ids_lists) * sum((len(i) for i in ids_lists)) + len(
+        models
+    )
 
     down_sensors = ", ".join(sensors)
-    if down_sensors == "": down_sensors = "-"
+    if down_sensors == "":
+        down_sensors = "-"
     down_obj_ids = ", ".join(map(str, ids_lists[0]))
-    if down_obj_ids == "": down_obj_ids = "-"
+    if down_obj_ids == "":
+        down_obj_ids = "-"
     down_scene_ids = ", ".join(map(str, ids_lists[1]))
-    if down_scene_ids == "": down_scene_ids = "-"
+    if down_scene_ids == "":
+        down_scene_ids = "-"
     down_model_types = ", ".join(models)
-    if down_model_types == "": down_model_types = "-"
+    if down_model_types == "":
+        down_model_types = "-"
 
-    print("\nData to be downloaded to \"{}\":\n"
-          "------------------------------------\n"
-          "Training images (from sensors: {}) for objects:\n{}\n\n"
-          "Test images (from sensors: {}) for scenes:\n{}\n\n"
-          "Models:\n{}\n"
-          "------------------------------------\n".format(
-              path_dest_home, down_sensors, down_obj_ids, down_sensors,
-              down_scene_ids, down_model_types))
+    print(
+        '\nData to be downloaded to "{}":\n'
+        "------------------------------------\n"
+        "Training images (from sensors: {}) for objects:\n{}\n\n"
+        "Test images (from sensors: {}) for scenes:\n{}\n\n"
+        "Models:\n{}\n"
+        "------------------------------------\n".format(
+            path_dest_home,
+            down_sensors,
+            down_obj_ids,
+            down_sensors,
+            down_scene_ids,
+            down_model_types,
+        )
+    )
     print(
         "Note: If you have already downloaded some of these dataset parts to "
         "the same destination folder, they will be downloaded again and overwritten.\n"
@@ -729,16 +752,14 @@ def main():
             for id in ids:
                 name = "{:02d}".format(id)
                 path = os.path.join(path_dest_home, root, parent)
-                url = "{}/{}.zip".format(url_root,
-                                         "_".join([root, parent, name]))
+                url = "{}/{}.zip".format(url_root, "_".join([root, parent, name]))
                 down_unzip(url, path, zip_download_dir)
     for model_type in models:
         name = "models_" + model_type
         path_base = os.path.join(root)
         url = "{}/{}.zip".format(url_root, "{}_{}".format(root, name))
-        down_unzip(url, os.path.join(path_dest_home, path_base),
-                   zip_download_dir)
+        down_unzip(url, os.path.join(path_dest_home, path_base), zip_download_dir)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

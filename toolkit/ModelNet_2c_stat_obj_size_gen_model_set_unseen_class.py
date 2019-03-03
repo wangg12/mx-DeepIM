@@ -7,80 +7,89 @@ from __future__ import print_function, division
 
 import numpy as np
 import os
+
 cur_dir = os.path.dirname(os.path.abspath(__file__))
 from lib.pair_matching.RT_transform import *
 from lib.utils.mkdir_if_missing import mkdir_if_missing
 import random
-from lib.render_glumpy.render_py_light_modelnet_multi import Render_Py_Light_ModelNet_Multi
+from lib.render_glumpy.render_py_light_modelnet_multi import (
+    Render_Py_Light_ModelNet_Multi,
+)
 
 random.seed(2333)
 np.random.seed(1234)
 
 classes = [
-    'airplane',
-    'bed',
-    'bench',
-    'car',
-    'chair',
-    'toilet',
-    'sink',
-    'stool',
-    'piano',
+    "airplane",
+    "bed",
+    "bench",
+    "car",
+    "chair",
+    "toilet",
+    "sink",
+    "stool",
+    "piano",
     # 'laptop',
-    'range_hood',  #'stairs',
-    'tv_stand',
-    'bookshelf',
-    'mantel',
-    'door',
-    'glass_box',
-    'guitar',
-    'wardrobe',  # test
+    "range_hood",  #'stairs',
+    "tv_stand",
+    "bookshelf",
+    "mantel",
+    "door",
+    "glass_box",
+    "guitar",
+    "wardrobe",  # test
     # 'plant',
-    'xbox',
-    'bathtub',
-    'table',
-    'monitor',
-    'sofa',
-    'night_stand'
+    "xbox",
+    "bathtub",
+    "table",
+    "monitor",
+    "sofa",
+    "night_stand",
 ]
 train_classes = [
-    'airplane', 'bed', 'bench', 'car', 'chair', 'toilet', 'sink', 'stool',
-    'piano'
+    "airplane",
+    "bed",
+    "bench",
+    "car",
+    "chair",
+    "toilet",
+    "sink",
+    "stool",
+    "piano",
 ]
 test_classes = [
-    'range_hood',  #'stairs',
-    'tv_stand',
-    'bookshelf',
-    'mantel',
-    'door',
-    'glass_box',
-    'guitar',
-    'wardrobe',  # test
+    "range_hood",  #'stairs',
+    "tv_stand",
+    "bookshelf",
+    "mantel",
+    "door",
+    "glass_box",
+    "guitar",
+    "wardrobe",  # test
     # 'plant',
-    'xbox',
-    'bathtub',
-    'table',
-    'monitor',
-    'sofa',
-    'night_stand'
+    "xbox",
+    "bathtub",
+    "table",
+    "monitor",
+    "sofa",
+    "night_stand",
 ]
 print(classes)
 
 # config for renderer
 width = 640
 height = 480
-K = np.array([[572.4114, 0, 325.2611], [0, 573.57043, 242.04899], [0, 0,
-                                                                   1]])  # LM
+K = np.array([[572.4114, 0, 325.2611], [0, 573.57043, 242.04899], [0, 0, 1]])  # LM
 ZNEAR = 0.25
 ZFAR = 6.0
 depth_factor = 1000
 
 ########################
-modelnet_root = '/data/wanggu/Downloads/modelnet'  # NB: change to your dir
-modelnet40_root = os.path.join(modelnet_root, 'ModelNet40')
-image_set_dir = os.path.join(modelnet_root, 'modelnet_render_v1/image_set')
+modelnet_root = "/data/wanggu/Downloads/modelnet"  # NB: change to your dir
+modelnet40_root = os.path.join(modelnet_root, "ModelNet40")
+image_set_dir = os.path.join(modelnet_root, "modelnet_render_v1/image_set")
 
-model_set_dir = os.path.join(modelnet_root, 'model_set')
+model_set_dir = os.path.join(modelnet_root, "model_set")
 mkdir_if_missing(model_set_dir)
 
 
@@ -90,7 +99,7 @@ def file_size(file_path):
     """
     if os.path.isfile(file_path):
         file_info = os.stat(file_path)
-        size_in_MB = file_info.st_size / (1024. * 1024.)
+        size_in_MB = file_info.st_size / (1024.0 * 1024.0)
         return size_in_MB
         # return convert_bytes(file_info.st_size)
 
@@ -111,17 +120,17 @@ def stat_obj_size():
 
         train_model_path_dict = {}
         test_model_path_dict = {}
-        for set in ['train', 'test']:
-            if set == 'test':
+        for set in ["train", "test"]:
+            if set == "test":
                 model_list = [
-                    fn.replace('my_val_', '').replace('.txt', '')
+                    fn.replace("my_val_", "").replace(".txt", "")
                     for fn in os.listdir(os.path.join(image_set_dir))
-                    if 'my_val_{}'.format(cls_name) in fn
+                    if "my_val_{}".format(cls_name) in fn
                 ]
 
-            if set == 'test':
+            if set == "test":
                 n_model_list = [
-                    '{}/{}/{}'.format(cls_name, set, model_name)
+                    "{}/{}/{}".format(cls_name, set, model_name)
                     for model_name in model_list
                 ]
                 if len(n_model_list) > 50:
@@ -130,18 +139,25 @@ def stat_obj_size():
                     test_cls_models[cls_name] = n_model_list
 
         with open(
-                os.path.join(model_set_dir,
-                             'unseen_test_{}.txt'.format(cls_name)), 'w') as f:
+            os.path.join(model_set_dir, "unseen_test_{}.txt".format(cls_name)), "w"
+        ) as f:
             for model_name in test_cls_models[cls_name]:
-                f.write(model_name + '\n')
+                f.write(model_name + "\n")
 
         def check_render():
-            texture_path = os.path.join(modelnet_root, 'gray_texture.png')
+            texture_path = os.path.join(modelnet_root, "gray_texture.png")
             # init render machines
             brightness_ratios = [0.7]  ###################
             render_machine = Render_Py_Light_ModelNet_Multi(
-                train_model_path_list, texture_path, K, width, height, ZNEAR,
-                ZFAR, brightness_ratios)
+                train_model_path_list,
+                texture_path,
+                K,
+                width,
+                height,
+                ZNEAR,
+                ZFAR,
+                brightness_ratios,
+            )
 
             pose = np.zeros((3, 4))
             rot_q = np.random.normal(0, 1, 4)
@@ -175,7 +191,7 @@ def stat_obj_size():
             # print("light_position b: {}".format(light_position))
 
             colors = np.array([1, 1, 1])  # white light
-            intensity = np.random.uniform(0.9, 1.1, size=(3, ))
+            intensity = np.random.uniform(0.9, 1.1, size=(3,))
             colors_randk = random.randint(0, colors.shape[0] - 1)
             light_intensity = colors[colors_randk] * intensity
             # print('light intensity: ', light_intensity)
@@ -190,22 +206,23 @@ def stat_obj_size():
                 pose[:, -1],
                 light_position,
                 light_intensity,
-                brightness_k=rm_randk)
-            rgb_gl = rgb_gl.astype('uint8')
+                brightness_k=rm_randk,
+            )
+            rgb_gl = rgb_gl.astype("uint8")
 
 
 def load_points_from_obj():
     from glumpy import data
-    model_path = os.path.join(
-        cur_dir,
-        '../data/ModelNet/ModelNet40/airplane/train/airplane_0005.obj')
-    vertices, indices = data.objload("{}".format(model_path), rescale=True)
-    vertices['position'] = vertices['position'] / 10.
 
-    points = np.array(vertices['position'])
+    model_path = os.path.join(
+        cur_dir, "../data/ModelNet/ModelNet40/airplane/train/airplane_0005.obj"
+    )
+    vertices, indices = data.objload("{}".format(model_path), rescale=True)
+    vertices["position"] = vertices["position"] / 10.0
+
+    points = np.array(vertices["position"])
     print(type(points))
-    print(points.shape, points.min(0), points.max(0),
-          points.max(0) - points.min(0))
+    print(points.shape, points.min(0), points.max(0), points.max(0) - points.min(0))
 
 
 if __name__ == "__main__":
