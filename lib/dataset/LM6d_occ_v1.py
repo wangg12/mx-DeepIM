@@ -104,7 +104,9 @@ class LM6D_occ_v1(IMDB):
 
         if image_set.startswith("posecnn_val") or image_set.startswith("test_vis"):
             if os.path.exists(os.path.join(devkit_path, "data", "mask_posecnn_v01")):
-                self.mask_est_path = os.path.join(devkit_path, "data", "mask_posecnn_v01")
+                self.mask_est_path = os.path.join(
+                    devkit_path, "data", "mask_posecnn_v01"
+                )
             else:
                 self.mask_est_path = (
                     ""
@@ -328,7 +330,9 @@ class LM6D_occ_v1(IMDB):
         cls_name = self.cur_class
         pair_rec["gt_class"] = cls_name
 
-        pair_rec["image_observed"] = self.image_path_from_index(pair_index[0], "observed")
+        pair_rec["image_observed"] = self.image_path_from_index(
+            pair_index[0], "observed"
+        )
         # pair_rec["image_gt_observed"] = self.image_path_from_index(
         #     pair_index[0], "gt_observed", cls_name=cls_name
         # )
@@ -340,7 +344,9 @@ class LM6D_occ_v1(IMDB):
         assert size_observed == size_rendered
         pair_rec["height"] = size_observed[0]
         pair_rec["width"] = size_observed[1]
-        pair_rec["depth_observed"] = self.depth_path_from_index(pair_index[0], "observed")
+        pair_rec["depth_observed"] = self.depth_path_from_index(
+            pair_index[0], "observed"
+        )
         pair_rec["depth_gt_observed"] = self.depth_path_from_index(
             pair_index[0], "gt_observed", cls_name=cls_name
         )
