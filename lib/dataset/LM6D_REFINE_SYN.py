@@ -6,6 +6,7 @@
 from __future__ import print_function, division, absolute_import
 import six
 from six.moves import cPickle, xrange
+
 # import cv2
 import os
 import numpy as np
@@ -106,7 +107,7 @@ class LM6D_REFINE_SYN(IMDB):
         Return the default path where LOV is expected to be installed.
         """
         ROOT_DIR = os.path.join(os.path.dirname(__file__), "..", "..")
-        return os.path.join(ROOT_DIR, "data", "LINEMOD")
+        return os.path.join(ROOT_DIR, "data", "LINEMOD_6D")
 
     def _load_object_points(self):
 
@@ -171,7 +172,7 @@ class LM6D_REFINE_SYN(IMDB):
         if check:
             assert os.path.exists(
                 image_file
-            ), "type: {}, path does not exist: {}, self.real_data_path:{}".format(
+            ), "type: {}, path does not exist: {}, self.observed_data_path:{}".format(
                 type, image_file, self.observed_data_path
             )
 
@@ -229,8 +230,8 @@ class LM6D_REFINE_SYN(IMDB):
     def gt_pairdb(self):
         """
         return ground truth match pair dataset
-        :return: imdb[pair_index]['image_real', 'image_rendered', 'height', 'width',
-                                  'pose_real', 'pose_est', 'flipped']
+        :return: imdb[pair_index]['image_observed', 'image_rendered', 'height', 'width',
+                                  'pose_observed', 'pose_est', 'flipped']
         """
         cache_file = os.path.join(self.cache_path, self.name + "_gt_pairdb.pkl")
         if os.path.exists(cache_file):
@@ -276,11 +277,11 @@ class LM6D_REFINE_SYN(IMDB):
         # NOTE: speed up but can not get channel info
         # size_real = cv2.imread(pair_rec["image_observed"]).shape
         # size_rendered = cv2.imread(pair_rec["image_rendered"]).shape
-        size_real = get_image_size(pair_rec['image_observed'])
-        size_rendered = get_image_size(pair_rec['image_rendered'])
-        assert size_real == size_rendered
-        pair_rec["height"] = size_real[0]
-        pair_rec["width"] = size_real[1]
+        size_observed = get_image_size(pair_rec["image_observed"])
+        size_rendered = get_image_size(pair_rec["image_rendered"])
+        assert size_observed == size_rendered
+        pair_rec["height"] = size_observed[0]
+        pair_rec["width"] = size_observed[1]
         pair_rec["depth_observed"] = self.depth_path_from_index(
             pair_index[0], "observed", cls_name=cls_name
         )

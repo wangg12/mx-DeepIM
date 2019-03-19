@@ -100,7 +100,7 @@ if __name__ == "__main__":
         #     continue
         big_class_idx = class2big_idx[class_name]
 
-        # init render
+        # init renderer
         model_dir = os.path.join(LINEMOD_root, "models/{}".format(class_name))
         if gen_images:
             render_machine = Render_Py(model_dir, K, width, height, ZNEAR, ZFAR)

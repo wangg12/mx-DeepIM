@@ -10,8 +10,8 @@ from easydict import EasyDict as edict
 
 config = edict()
 config.ModelNet = False
-config.modelnet_root = './data/ModelNet/'
-config.MXNET_VERSION = ''
+config.modelnet_root = "./data/ModelNet/"
+config.MXNET_VERSION = ""
 
 config.output_path = ""
 config.symbol = ""

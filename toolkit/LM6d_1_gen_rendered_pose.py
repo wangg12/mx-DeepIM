@@ -5,22 +5,22 @@
 # --------------------------------------------------------
 # generate rendered poses according to real(observed) poses
 from __future__ import print_function, division
-
-import sys
 import os
+import sys
+from math import pi
+import numpy as np
+from tqdm import tqdm
 
 cur_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(1, os.path.join(cur_dir, ".."))
-from lib.utils.mkdir_if_missing import mkdir_if_missing
-import numpy as np
 from lib.pair_matching.RT_transform import (
     euler2quat,
     mat2euler,
     calc_rt_dist_m,
     euler2mat,
 )
-from math import pi
-from tqdm import tqdm
+from lib.utils.mkdir_if_missing import mkdir_if_missing
+
 
 np.random.seed(2333)
 
@@ -69,7 +69,7 @@ for cls_idx, cls_name in idx2class.items():
     # if cls_name not in ['ape']:
     #     continue
     print(cls_idx, cls_name)
-    # if cls_name != 'ape': # NB:comment here to generate for all classes
+    # if cls_name != 'ape': # NOTE:comment here to generate for all classes
     #     continue
     rd_stat = []
     td_stat = []

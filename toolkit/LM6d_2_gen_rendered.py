@@ -71,7 +71,7 @@ def main():
         #     continue
 
         if gen_images:
-            # init render
+            # init renderer
             model_dir = os.path.join(LM6d_root, "models", class_name)
             render_machine = Render_Py(model_dir, K, width, height, ZNEAR, ZFAR)
 

@@ -7,19 +7,22 @@
 generate gt observed from syn_poses
 """
 from __future__ import division, print_function
-import numpy as np
+
 import os
+import random
 import sys
+
+import cv2
+import numpy as np
+from six.moves import cPickle
+from tqdm import tqdm
 
 cur_path = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(1, os.path.join(cur_path, ".."))
-from lib.utils.mkdir_if_missing import mkdir_if_missing
+from lib.pair_matching import RT_transform
 from lib.render_glumpy.render_py import Render_Py
-import lib.pair_matching.RT_transform as se3
-import cv2
-from six.moves import cPickle
-import random
-from tqdm import tqdm
+from lib.utils.mkdir_if_missing import mkdir_if_missing
+
 
 random.seed(2333)
 np.random.seed(2333)
@@ -126,7 +129,7 @@ def gen_gt_observed():
             )
 
             pose_quat = syn_poses[idx, :]
-            pose = se3.se3_q2m(pose_quat)
+            pose = RT_transform.se3_q2m(pose_quat)
 
             # generate random light_position
             if idx % 6 == 0:

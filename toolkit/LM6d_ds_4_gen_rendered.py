@@ -5,7 +5,7 @@
 # --------------------------------------------------------
 """
 generate rendered from rendered poses
-generate (real rendered) pair list file for training (or test)
+generate (observed rendered) pair list file for training (or test)
 """
 from __future__ import print_function, division
 import numpy as np
@@ -96,37 +96,37 @@ if __name__ == "__main__":
 
         for set_type in ["train"]:
             with open(observed_list_path.format(set_type, class_name)) as f:
-                real_list = [x.strip() for x in f.readlines()]
+                observed_list = [x.strip() for x in f.readlines()]
             with open(rendered_pose_path.format(class_name)) as f:
                 str_rendered_pose_list = [x.strip().split(" ") for x in f.readlines()]
             rendered_pose_list = np.array(
                 [[float(x) for x in each_pose] for each_pose in str_rendered_pose_list]
             )
-            rendered_per_real = 1
-            assert len(rendered_pose_list) == 1 * len(real_list), "{} vs {}".format(
-                len(rendered_pose_list), len(real_list)
+            rendered_per_observed = 1
+            assert len(rendered_pose_list) == 1 * len(observed_list), "{} vs {}".format(
+                len(rendered_pose_list), len(observed_list)
             )
-            for idx, real_index in enumerate(tqdm(real_list)):
-                video_name, real_prefix = real_index.split("/")
+            for idx, observed_index in enumerate(tqdm(observed_list)):
+                video_name, observed_prefix = observed_index.split("/")
                 rendered_dir = os.path.join(rendered_root_dir, video_name)
                 mkdir_if_missing(rendered_dir)
-                for inner_idx in range(rendered_per_real):
+                for inner_idx in range(rendered_per_observed):
                     if gen_images:
                         image_file = os.path.join(
                             rendered_dir,
                             "{}_{}_{}-color.png".format(
-                                class_name, real_prefix, inner_idx
+                                class_name, observed_prefix, inner_idx
                             ),
                         )
                         depth_file = os.path.join(
                             rendered_dir,
                             "{}_{}_{}-depth.png".format(
-                                class_name, real_prefix, inner_idx
+                                class_name, observed_prefix, inner_idx
                             ),
                         )
                         # if os.path.exists(image_file) and os.path.exists(depth_file):
                         #     continue
-                        rendered_idx = idx * rendered_per_real + inner_idx
+                        rendered_idx = idx * rendered_per_observed + inner_idx
                         pose_rendered_q = rendered_pose_list[rendered_idx]
 
                         rgb_gl, depth_gl = render_machine.render(
@@ -142,7 +142,7 @@ if __name__ == "__main__":
                         pose_file = os.path.join(
                             rendered_dir,
                             "{}_{}_{}-pose.txt".format(
-                                class_name, real_prefix, inner_idx
+                                class_name, observed_prefix, inner_idx
                             ),
                         )
                         text_file = open(pose_file, "w")
@@ -169,7 +169,11 @@ if __name__ == "__main__":
 
                     train_pair.append(
                         "{} {}/{}_{}_{}".format(
-                            real_index, video_name, class_name, real_prefix, inner_idx
+                            observed_index,
+                            video_name,
+                            class_name,
+                            observed_prefix,
+                            inner_idx,
                         )
                     )
 
